@@ -19,7 +19,7 @@ public class Empresa {
         int opcion = 0;
 
         do {
-            System.out.println("***** MENÚ PRINCIPAL *****");
+            System.out.println("***** MENU PRINCIPAL *****");
             System.out.println("1. Agregar Empleado");
             System.out.println("2. Listar Empleados NO Despedidos");
             System.out.println("3. Agregar Venta a Empleado");
@@ -27,7 +27,7 @@ public class Empresa {
             System.out.println("5. Despedir Empleado");
             System.out.println("6. Ver reporte de Empleado");
             System.out.println("7. Salir");
-            System.out.print("Escoja una opción: ");
+            System.out.print("Escoja una opcion: ");
             opcion = lea.nextInt();
             lea.nextLine();
 
@@ -47,7 +47,7 @@ public class Empresa {
                     break;
 
                 case 3:
-                    System.out.print("Código del empleado: ");
+                    System.out.print("Codigo del empleado: ");
                     int codVenta = lea.nextInt();
                     System.out.print("Monto de venta: ");
                     double monto = lea.nextDouble();
@@ -56,21 +56,21 @@ public class Empresa {
                     break;
 
                 case 4:
-                    System.out.print("Código del empleado a pagar: ");
+                    System.out.print("Codigo del empleado a pagar: ");
                     int codPago = lea.nextInt();
                     lea.nextLine();
                     manager.payEmployee(codPago);
                     break;
 
                 case 5:
-                    System.out.print("Código del empleado a despedir: ");
+                    System.out.print("Codigo del empleado a despedir: ");
                     int codDesp = lea.nextInt();
                     lea.nextLine();
                     manager.fireEmployee(codDesp);
                     break;
 
                 case 6:
-                    System.out.print("Código del empleado: ");
+                    System.out.print("Codigo del empleado: ");
                     int codReporte = lea.nextInt();
                     lea.nextLine();
                     manager.printEmployee(codReporte);
@@ -81,7 +81,7 @@ public class Empresa {
                     break;
 
                 default:
-                    System.out.println("Opción no válida.");
+                    System.out.println("Opcion no valida.");
             }
 
         } while (opcion != 7);

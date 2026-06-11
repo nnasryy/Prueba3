@@ -207,4 +207,46 @@ public class EmpleadoManager {
         System.out.printf("Empleado %s se le pago Lps. %.2f%n", name, total);
     }
  
+    public void printEmployee(int code) throws IOException {
+        if (!isEmployeeActive(code)) {
+            System.out.println("Empleado no encontrado o inactivo");
+            return;
+        }
+ 
+        String name = remps.readUTF();
+        double salario = remps.readDouble();
+        Date fechaContratacion = new Date(remps.readLong());
+ 
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(fechaContratacion);
+        int dia = cal.get(Calendar.DAY_OF_MONTH);
+        int mes = cal.get(Calendar.MONTH) + 1;
+        int anio = cal.get(Calendar.YEAR);
+ 
+        System.out.println("Codigo: " + code + " Nombre: " + name + " Salario: " + salario
+                + " Fecha de contratacion: " + dia + "/" + mes + "/" + anio);
+ 
+        RandomAccessFile sales = salesFilefor(code);
+        sales.seek(0);
+        double totalVentas = 0;
+        for (int m = 0; m < 12; m++) {
+            double montoMes = sales.readDouble();
+            sales.skipBytes(1);
+            System.out.println("Mes " + (m + 1) + " : " + montoMes);
+            totalVentas += montoMes;
+        }
+        sales.close();
+        System.out.println("Total de ventas del año: " + totalVentas);
+ 
+        RandomAccessFile bills = billsFilefor(code);
+        int totalRecibos = 0;
+        int tamRecibo = 8 + 8 + 8 + 4 + 4;
+        bills.seek(0);
+        while (bills.getFilePointer() < bills.length()) {
+            bills.skipBytes(tamRecibo);
+            totalRecibos++;
+        }
+        bills.close();
+        System.out.println("Total de pagos realizados: " + totalRecibos);
+    }
 }
