@@ -249,4 +249,4 @@ public class EmpleadoManager {
         bills.close();
         System.out.println("Total de pagos realizados: " + totalRecibos);
     }
-}
+} 
