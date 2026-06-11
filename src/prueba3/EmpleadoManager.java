@@ -30,25 +30,25 @@ public class EmpleadoManager {
     long fechaDespido
      */
     private RandomAccessFile rcods, remps;
-
+ 
     public EmpleadoManager() {
+        File mf = new File("company");
+        mf.mkdir();
         try {
-            File mf = new File("company");
-            mf.mkdir();
-            rcods = new RandomAccessFile("company/codigos.emp", "rw");
-            remps = new RandomAccessFile("company/empleados.emp", "rw");
-            initCode();
+            rcods = new RandomAccessFile("company/codigo.emp", "rw");
+            remps = new RandomAccessFile("company/empleado.emp", "rw");
+            initCodes();
         } catch (IOException e) {
-            System.out.println("Error!");
+            System.out.println("Error al inicializar los archivos: " + e.getMessage());
         }
     }
-
-    private void initCode() throws IOException {
+ 
+    private void initCodes() throws IOException {
         if (rcods.length() == 0) {
             rcods.writeInt(1);
         }
     }
-
+ 
     private int getCode() throws IOException {
         rcods.seek(0);
         int code = rcods.readInt();
@@ -56,7 +56,7 @@ public class EmpleadoManager {
         rcods.writeInt(code + 1);
         return code;
     }
-
+ 
     public void addEmployee(String name, double salary) throws IOException {
         remps.seek(remps.length());
         int code = getCode();
@@ -65,93 +65,146 @@ public class EmpleadoManager {
         remps.writeDouble(salary);
         remps.writeLong(Calendar.getInstance().getTimeInMillis());
         remps.writeLong(0);
-        createEmployeeFolders(code);
+        createEmployeeFolder(code);
     }
-
+ 
     private String employeeFolder(int code) {
         return "company/empleado" + code;
     }
-
-    private RandomAccessFile salesFileFor(int code) throws IOException {
+ 
+    private RandomAccessFile salesFilefor(int code) throws IOException {
         String dirPadre = employeeFolder(code);
-        int year = Calendar.getInstance().get(Calendar.YEAR);
-        String dir = dirPadre + "/ventas" + year + ".emp";
-        return new RandomAccessFile(dir, "rw");
+        int yearActual = Calendar.getInstance().get(Calendar.YEAR);
+        String path = dirPadre + "/ventas" + yearActual + ".emp";
+        return new RandomAccessFile(path, "rw");
     }
-
-    private RandomAccessFile billsFileFor(int code) throws IOException {
+ 
+    private RandomAccessFile billsFilefor(int code) throws IOException {
         String dirPadre = employeeFolder(code);
-        String dir = dirPadre + "/recibos.emp";
-        return new RandomAccessFile(dir, "rw");
+        String path = dirPadre + "/recibos.emp";
+        return new RandomAccessFile(path, "rw");
     }
-
-    private void createYearSalesFilesFor(int code) throws IOException {
-        RandomAccessFile rventas = salesFileFor(code);
-        if (rventas.length() == 0) {
+ 
+    private void createSalesFileFor(int code) throws IOException {
+        RandomAccessFile ryear = salesFilefor(code);
+        if (ryear.length() == 0) {
             for (int mes = 0; mes < 12; mes++) {
-                rventas.writeDouble(0);
-                rventas.writeBoolean(false);
+                ryear.writeDouble(0);
+                ryear.writeBoolean(false);
             }
         }
-        rventas.close();
+        ryear.close();
     }
-
-    private void createEmployeeFolders(int code) throws IOException {
-        File dir = new File(employeeFolder(code));
-        dir.mkdir();
-        createYearSalesFilesFor(code);
+ 
+    private void createEmployeeFolder(int code) throws IOException {
+        File edir = new File(employeeFolder(code));
+        edir.mkdir();
+        createSalesFileFor(code);
     }
-
+ 
     public void employeeList() throws IOException {
         remps.seek(0);
         while (remps.getFilePointer() < remps.length()) {
             int code = remps.readInt();
             String name = remps.readUTF();
-            double salario = remps.readDouble();
-            Date dateH = new Date(remps.readLong());
+            double sal = remps.readDouble();
+            Date fecha = new Date(remps.readLong());
             if (remps.readLong() == 0) {
-                System.out.println("Codigo: " + code + " Nombre: " + name + " Salario: $" + salario + " Fecha: " + dateH);
+                System.out.println(code + " - " + name + " - Lps. " + sal + " Contratado el: " + fecha);
             }
         }
     }
-
-    private long seekToEmployee(int code) throws IOException {
+ 
+    private boolean isEmployeeActive(int code) throws IOException {
         remps.seek(0);
         while (remps.getFilePointer() < remps.length()) {
-            int cod = remps.readInt();
+            int codeI = remps.readInt();
             long pos = remps.getFilePointer();
             remps.readUTF();
             remps.skipBytes(8);
             remps.skipBytes(8);
             long fechaDespido = remps.readLong();
-
-            if (cod == code) {
-                if (fechaDespido == 0) {
-                    remps.seek(pos);
-                    return pos;
-                } else {
-                    return -1;
-                }
+            if (fechaDespido == 0 && codeI == code) {
+                remps.seek(pos);
+                return true;
             }
         }
-        return -1;
+        return false;
     }
-
-    private boolean isEmployeeActive(int code) throws IOException {
-        return seekToEmployee(code) != -1;
-    }
-
+ 
     public boolean fireEmployee(int code) throws IOException {
-        long pos = seekToEmployee(code);
-        if (pos != -1) {
+        if (isEmployeeActive(code)) {
             String name = remps.readUTF();
             remps.skipBytes(16);
             remps.writeLong(new Date().getTime());
-            System.out.println("Despidiendo a: " + name);
+            System.out.println("Despidiendo a " + name);
             return true;
         }
         System.out.println("No se pudo despedir al empleado");
         return false;
     }
-
+ 
+    public void addSaleToEmployee(int code, double ven) throws IOException {
+        if (!isEmployeeActive(code)) {
+            System.out.println("Empleado no encontrado");
+            return;
+        }
+        RandomAccessFile sales = salesFilefor(code);
+        int pos = Calendar.getInstance().get(Calendar.MONTH) * 9;
+        sales.seek(pos);
+        double monto = sales.readDouble();
+        sales.seek(pos);
+        sales.writeDouble(monto + ven);
+        sales.close();
+    }
+ 
+    private boolean isEmployeePayed(int code) throws IOException {
+        RandomAccessFile sales = salesFilefor(code);
+        int mes = Calendar.getInstance().get(Calendar.MONTH);
+        int pos = mes * 9;
+        sales.seek(pos);
+        sales.skipBytes(8);
+        boolean pagado = sales.readBoolean();
+        sales.close();
+        return pagado;
+    }
+ 
+    public void payEmployee(int code) throws IOException {
+        if (!isEmployeeActive(code) || isEmployeePayed(code)) {
+            System.out.println("No se pudo pagar");
+            return;
+        }
+ 
+        int year = Calendar.getInstance().get(Calendar.YEAR);
+        int mes = Calendar.getInstance().get(Calendar.MONTH);
+ 
+        RandomAccessFile sales = salesFilefor(code);
+        int posVentas = mes * 9;
+        sales.seek(posVentas);
+        double ventas = sales.readDouble();
+ 
+        isEmployeeActive(code);
+        String name = remps.readUTF();
+        double salarioBase = remps.readDouble();
+ 
+        double sueldo = salarioBase + (ventas * 0.10);
+        double deduccion = sueldo * 0.035;
+        double total = sueldo - deduccion;
+ 
+        RandomAccessFile bills = billsFilefor(code);
+        bills.seek(bills.length());
+        bills.writeLong(Calendar.getInstance().getTimeInMillis());
+        bills.writeDouble(sueldo);
+        bills.writeDouble(deduccion);
+        bills.writeInt(year);
+        bills.writeInt(mes);
+        bills.close();
+ 
+        sales.seek(posVentas + 8);
+        sales.writeBoolean(true);
+        sales.close();
+ 
+        System.out.printf("Empleado %s se le pago Lps. %.2f%n", name, total);
+    }
+ 
 }
